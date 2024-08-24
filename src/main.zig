@@ -1,5 +1,5 @@
 const std = @import("std");
-const image = @import("image.zig");
+const image = @import("image");
 
 const ASCII_CHARS = [_]u8{ ' ', '.', ':', 'c', 'o', '?', 'P', 'O', '#', '@' };
 
