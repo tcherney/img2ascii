@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const image = @import("image");
 
 pub const Image = image.Image;
@@ -64,9 +65,19 @@ pub fn main() !void {
     const stdout_file = std.io.getStdOut().writer();
     var bw = std.io.bufferedWriter(stdout_file);
     const stdout = bw.writer();
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    const argsv = try std.process.argsAlloc(allocator);
+    try stdout.print("\x1B[91m", .{});
+    try bw.flush();
+    var allocator: std.mem.Allocator = undefined;
+    if (builtin.os.tag != .emscripten) {
+        const gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        allocator = gpa.allocator();
+    } else {
+        allocator = std.heap.c_allocator;
+    }
+    const argsv = if (builtin.os.tag != .emscripten) try std.process.argsAlloc(allocator) else &[_][]const u8{
+        "img2ascii",
+        "tests/jpeg/cat.jpg",
+    };
     var ascii_image: []u8 = undefined;
     var ascii_height: u32 = 100;
     if (argsv.len > 1) {
@@ -117,10 +128,8 @@ pub fn main() !void {
     try ascii_file.writeAll(ascii_image);
     ascii_file.close();
     allocator.free(ascii_image);
+    try stdout.print("\x1B[0m", .{});
+    try bw.flush();
 
-    std.process.argsFree(allocator, argsv);
-
-    if (gpa.deinit() == .leak) {
-        std.debug.print("Leaked!\n", .{});
-    }
+    if (builtin.os.tag != .emscripten) std.process.argsFree(allocator, argsv);
 }
