@@ -51,28 +51,28 @@
         outline: none;
       } */
 
-      #output-container {
+      /* #output-container {
         position: relative;
         width: 1350px;
         height: 607px;
-      }
+      } */
 
-      #output {
+      /* #output {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-      }
+      } */
 
-      #output-overlay {
+      /* #output-overlay {
         position: absolute;
         z-index: 9;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-      }
+      } */
 
       .spinner {
         height: 50px;
@@ -156,7 +156,7 @@
     <!-- <hr /> -->
     <div id="output-container">
       <div id="output"></div>
-      <div id="output-overlay"></div>
+      <!-- <div id="output-overlay"></div> -->
     </div>
     <hr />
     <script type="text/javascript">
@@ -165,7 +165,7 @@
       var spinnerElement = document.getElementById("spinner");
       var term = new Terminal({
         cols: 150,
-        rows: 35,
+        rows: 50,
         scrollOnUserInput: false,
       });
       term.open(document.getElementById("output"));
@@ -182,6 +182,9 @@
             //console.log(text);
 
             term.write(text.replaceAll("\n", "\r\n"));
+            if (text.at(-1) != "\n") {
+              term.write("\r\n");
+            }
             //element.scrollTop = element.scrollHeight; // focus on bottom
           };
         })(),
