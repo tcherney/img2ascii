@@ -154,6 +154,7 @@
     </div> -->
 
     <!-- <hr /> -->
+    <input type="file" id="file_in" onchange="load_file()" />
     <div id="output-container">
       <div id="output"></div>
       <!-- <div id="output-overlay"></div> -->
@@ -168,7 +169,29 @@
         rows: 50,
         scrollOnUserInput: false,
       });
+      let reader = new FileReader();
+      let file = null;
+      function load_file() {
+        let files = document.getElementById("file_in").files;
+        file = files[0];
+        reader.addEventListener("loadend", asciify);
+        reader.readAsArrayBuffer(file);
+      }
+      function asciify(e) {
+        let result = reader.result;
+        console.log(result);
+        const uint8_view = new Uint8Array(result);
+        FS.writeFile(file.name, uint8_view);
+        term.clear();
+        Module.ccall(
+          "asciify",
+          null,
+          ["string", "number"],
+          [file.name, file.name.length]
+        );
+      }
       term.open(document.getElementById("output"));
+      term.scrollToTop();
 
       var Module = {
         print: (function () {
