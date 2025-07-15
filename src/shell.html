@@ -166,7 +166,7 @@
       var spinnerElement = document.getElementById("spinner");
       var term = new Terminal({
         cols: 150,
-        rows: 50,
+        rows: 100,
         scrollOnUserInput: false,
       });
       let reader = new FileReader();
@@ -189,9 +189,11 @@
           ["string", "number"],
           [file.name, file.name.length]
         );
+        setTimeout(function () {
+          term.scrollToTop();
+        }, 1000);
       }
       term.open(document.getElementById("output"));
-      term.scrollToTop();
 
       var Module = {
         print: (function () {

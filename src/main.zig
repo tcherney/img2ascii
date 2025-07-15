@@ -58,7 +58,6 @@ export fn asciify(name: [*:0]const u8, len: usize) usize {
     } else {
         std.debug.print("Image must be .jpg/.png/.bmp\n", .{});
     }
-    std.debug.print("Generated ascii_image len {d}\n {s}\n", .{ ascii_image.len, ascii_image });
     const stdout_file = std.io.getStdOut().writer();
     var bw = std.io.bufferedWriter(stdout_file);
     const stdout = bw.writer();
@@ -87,7 +86,7 @@ export fn asciify(name: [*:0]const u8, len: usize) usize {
 
 pub fn img2ascii(im: *Image) Error![]u8 {
     try im.convert_grayscale();
-    //try im.scale(600, 400);
+    try im.scale(600, 400, .BICUBIC);
     defer im.deinit();
     var sample: u32 = 1;
     if ((im.height) > ascii_height) {

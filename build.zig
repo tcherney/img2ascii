@@ -29,7 +29,7 @@ pub fn build(b: *std.Build) !void {
     exe_mod.addImport("image", imglib.module("image"));
 
     if (target.result.os.tag == .emscripten) {
-        _ = try emcc.Build(b, null, exe_mod, target, optimize, b.path("src/main.zig"), null, "src/shell.html", "tests/jpeg/cat.jpg");
+        _ = try emcc.Build(b, null, exe_mod, target, optimize, b.path("src/main.zig"), null, "src/shell.html", null);
     } else {
         // This creates another `std.Build.Step.Compile`, but this one builds an executable
         // rather than a static library.
