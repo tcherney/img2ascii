@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Zig WASM</title>
+    <title>img2ascii</title>
     <link rel="stylesheet" href="xterm/xterm.css" />
     <script src="xterm/xterm.js"></script>
     <style>
@@ -155,6 +155,7 @@
 
     <!-- <hr /> -->
     <input type="file" id="file_in" onchange="load_file()" />
+    Pick a jpg/png/bmp image file to get transformed into ascii!
     <div id="output-container">
       <div id="output"></div>
       <!-- <div id="output-overlay"></div> -->
@@ -179,7 +180,6 @@
       }
       function asciify(e) {
         let result = reader.result;
-        console.log(result);
         const uint8_view = new Uint8Array(result);
         FS.writeFile(file.name, uint8_view);
         term.clear();

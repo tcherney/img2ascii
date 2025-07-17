@@ -3,6 +3,30 @@ const builtin = @import("builtin");
 const image = @import("image");
 
 pub const Image = image.Image;
+pub const std_options: std.Options = .{
+    .log_level = .err,
+    .logFn = myLogFn,
+    .log_scope_levels = &[_]std.log.ScopeLevel{
+        .{ .scope = .img2ascii, .level = .err },
+    },
+};
+
+pub fn myLogFn(
+    comptime level: std.log.Level,
+    comptime scope: @TypeOf(.enum_literal),
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    const prefix = "[" ++ comptime level.asText() ++ "] (" ++ @tagName(scope) ++ "): ";
+    // Print the message to stderr, silently ignoring any errors
+    std.debug.lockStdErr();
+    defer std.debug.unlockStdErr();
+    const stderr = std.io.getStdErr().writer();
+    nosuspend stderr.print(prefix ++ format, args) catch return;
+}
+
+const IMG2ASCII_LOG = std.log.scoped(.img2ascii);
+
 const ASCII_CHARS = [_]u8{ ' ', '.', ':', 'c', 'o', '?', 'P', 'O', '#', '@' };
 
 const Error = error{
@@ -30,61 +54,34 @@ pub fn sample_pixel(im: *Image, i: usize, j: usize, num_samples: u32) Error!f32 
 }
 
 export fn asciify(name: [*:0]const u8, len: usize) usize {
-    var ascii_image: []u8 = undefined;
     const name_slice: []const u8 = name[0..len];
-    const extension: []const u8 = name_slice[len - 3 ..];
-
-    if (std.mem.eql(u8, extension, "jpg")) {
-        var im = Image.init_load(allocator, name_slice, .JPEG) catch {
+    var ret: usize = 0;
+    img2ascii(name_slice) catch |err| {
+        const stdout_file = std.io.getStdOut().writer();
+        var bw = std.io.bufferedWriter(stdout_file);
+        const stdout = bw.writer();
+        stdout.print("Error occured: {any}\n", .{err}) catch {
             return 1;
         };
-        ascii_image = img2ascii(&im) catch {
-            return 1;
-        };
-    } else if (std.mem.eql(u8, extension, "bmp")) {
-        var im = Image.init_load(allocator, name_slice, .BMP) catch {
-            return 1;
-        };
-        ascii_image = img2ascii(&im) catch {
-            return 1;
-        };
-    } else if (std.mem.eql(u8, extension, "png")) {
-        var im = Image.init_load(allocator, name_slice, .PNG) catch {
-            return 1;
-        };
-        ascii_image = img2ascii(&im) catch {
-            return 1;
-        };
-    } else {
-        std.debug.print("Image must be .jpg/.png/.bmp\n", .{});
-    }
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
-    stdout.print("{s}\n", .{ascii_image}) catch {
-        return 1;
-    };
-    bw.flush() catch {
-        return 1;
+        ret = 1;
     };
 
-    var output_string = std.ArrayList(u8).init(allocator);
-    output_string.writer().print("{s}txt", .{name_slice[0 .. len - 3]}) catch {
-        return 1;
-    };
-    var ascii_file = std.fs.cwd().createFile(output_string.items, .{}) catch {
-        return 1;
-    };
-    std.ArrayList(u8).deinit(output_string);
-    ascii_file.writeAll(ascii_image) catch {
-        return 1;
-    };
-    ascii_file.close();
-    allocator.free(ascii_image);
-    return 0;
+    return ret;
 }
 
-pub fn img2ascii(im: *Image) Error![]u8 {
+pub fn img2ascii(name: []const u8) Error!void {
+    var im: Image = undefined;
+    const extension: []const u8 = name[name.len - 3 ..];
+    if (std.mem.eql(u8, extension, "jpg")) {
+        im = try Image.init_load(allocator, name, .JPEG);
+    } else if (std.mem.eql(u8, extension, "bmp")) {
+        im = try Image.init_load(allocator, name, .BMP);
+    } else if (std.mem.eql(u8, extension, "png")) {
+        im = try Image.init_load(allocator, name, .PNG);
+    } else {
+        IMG2ASCII_LOG.err("Image must be .jpg/.png/.bmp\n", .{});
+    }
+
     try im.convert_grayscale();
     try im.scale(600, 400, .BICUBIC);
     defer im.deinit();
@@ -95,7 +92,6 @@ pub fn img2ascii(im: *Image) Error![]u8 {
     while ((im.height / sample) > ascii_height) {
         sample += 2;
     }
-    std.debug.print("sample rate {d}\n", .{sample});
     const SCALE = 1.0 / @as(f32, @floatFromInt(sample));
     var ascii_pixels: []u8 = try allocator.alloc(u8, im.height + @as(usize, @intFromFloat(@ceil(@as(f32, @floatFromInt(im.width)) * @as(f32, @floatFromInt(im.height)) * SCALE))));
     for (ascii_pixels) |*pix| {
@@ -106,7 +102,7 @@ pub fn img2ascii(im: *Image) Error![]u8 {
     var j: usize = 0;
     while (i < im.height) : (i += sample) {
         while (j < im.width) : (j += sample) {
-            const pixel_value = try sample_pixel(im, i, j, sample);
+            const pixel_value = try sample_pixel(&im, i, j, sample);
             var ascii_char_index: usize = @as(usize, @intFromFloat(pixel_value * @as(f32, @floatFromInt(ASCII_CHARS.len))));
             ascii_char_index = if (ascii_char_index >= ASCII_CHARS.len) ASCII_CHARS.len - 1 else ascii_char_index;
             ascii_pixels[ascii_index] = ASCII_CHARS[ascii_char_index];
@@ -117,7 +113,19 @@ pub fn img2ascii(im: *Image) Error![]u8 {
         ascii_index += 1;
     }
 
-    return ascii_pixels;
+    const stdout_file = std.io.getStdOut().writer();
+    var bw = std.io.bufferedWriter(stdout_file);
+    const stdout = bw.writer();
+    try stdout.print("{s}\n", .{ascii_pixels});
+    try bw.flush();
+
+    var output_string = std.ArrayList(u8).init(allocator);
+    try output_string.writer().print("{s}txt", .{name[0 .. name.len - 3]});
+    var ascii_file = try std.fs.cwd().createFile(output_string.items, .{});
+    std.ArrayList(u8).deinit(output_string);
+    try ascii_file.writeAll(ascii_pixels);
+    ascii_file.close();
+    allocator.free(ascii_pixels);
 }
 
 pub fn main() !void {
