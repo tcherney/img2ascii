@@ -166,8 +166,9 @@
       var progressElement = document.getElementById("progress");
       var spinnerElement = document.getElementById("spinner");
       var term = new Terminal({
-        cols: 150,
-        rows: 100,
+        cols: 600,
+        rows: 200,
+        fontSize: 4,
         scrollOnUserInput: false,
       });
       let reader = new FileReader();
@@ -191,7 +192,7 @@
         );
         setTimeout(function () {
           term.scrollToTop();
-        }, 1000);
+        }, 750);
       }
       term.open(document.getElementById("output"));
 

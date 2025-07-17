@@ -35,7 +35,7 @@ const Error = error{
 } || Image.Error || std.mem.Allocator.Error;
 
 var allocator: std.mem.Allocator = undefined;
-var ascii_height: u32 = 100;
+var ascii_height: u32 = 200;
 
 pub fn sample_pixel(im: *Image, i: usize, j: usize, num_samples: u32) Error!f32 {
     if (num_samples % 2 != 0 and num_samples != 1) {
@@ -72,7 +72,7 @@ export fn asciify(name: [*:0]const u8, len: usize) usize {
 pub fn img2ascii(name: []const u8) Error!void {
     var im: Image = undefined;
     const extension: []const u8 = name[name.len - 3 ..];
-    if (std.mem.eql(u8, extension, "jpg")) {
+    if (std.mem.eql(u8, extension, "jpg") or std.mem.eql(u8, name[name.len - 4 ..], "jpeg")) {
         im = try Image.init_load(allocator, name, .JPEG);
     } else if (std.mem.eql(u8, extension, "bmp")) {
         im = try Image.init_load(allocator, name, .BMP);
