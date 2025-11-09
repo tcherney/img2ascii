@@ -56,13 +56,9 @@ pub fn sample_pixel(im: *Image, i: usize, j: usize, num_samples: u32) Error!f32 
 export fn asciify(name: [*:0]const u8, len: usize) usize {
     const name_slice: []const u8 = name[0..len];
     var ret: usize = 0;
+    std.debug.print("asciifying {s}\n", .{name});
     img2ascii(name_slice) catch |err| {
-        const stdout_file = std.io.getStdOut().writer();
-        var bw = std.io.bufferedWriter(stdout_file);
-        const stdout = bw.writer();
-        stdout.print("Error occured: {any}\n", .{err}) catch {
-            return 1;
-        };
+        std.debug.print("Error occured: {any}\n", .{err});
         ret = 1;
     };
 
@@ -72,8 +68,11 @@ export fn asciify(name: [*:0]const u8, len: usize) usize {
 pub fn img2ascii(name: []const u8) Error!void {
     var im: Image = undefined;
     const extension: []const u8 = name[name.len - 3 ..];
+    std.debug.print("Loading image\n", .{});
     if (std.mem.eql(u8, extension, "jpg") or std.mem.eql(u8, name[name.len - 4 ..], "jpeg")) {
+        std.debug.print("Loading jpeg\n", .{});
         im = try Image.init_load(allocator, name, .JPEG);
+        std.debug.print("jpeg loaded\n", .{});
     } else if (std.mem.eql(u8, extension, "bmp")) {
         im = try Image.init_load(allocator, name, .BMP);
     } else if (std.mem.eql(u8, extension, "png")) {
@@ -81,9 +80,11 @@ pub fn img2ascii(name: []const u8) Error!void {
     } else {
         IMG2ASCII_LOG.err("Image must be .jpg/.png/.bmp\n", .{});
     }
-
+    std.debug.print("Converting to grayscaln", .{});
     try im.convert_grayscale();
+    std.debug.print("Scaling\n", .{});
     try im.scale(600, 400, .BICUBIC);
+    std.debug.print("{any}", .{im.data.items});
     defer im.deinit();
     var sample: u32 = 1;
     if ((im.height) > ascii_height) {
@@ -140,6 +141,7 @@ pub fn main() !void {
     }
     if (builtin.os.tag != .emscripten) {
         const argsv = try std.process.argsAlloc(allocator);
+        //std.debug.print("args {s} {s} {s}", .{ argsv[0], argsv[1], argsv[2] });
         if (argsv.len > 1) {
             if (argsv.len == 3) {
                 ascii_height = try std.fmt.parseInt(u32, argsv[2], 10);
