@@ -80,11 +80,10 @@ pub fn img2ascii(name: []const u8) Error!void {
     } else {
         IMG2ASCII_LOG.err("Image must be .jpg/.png/.bmp\n", .{});
     }
-    std.debug.print("Converting to grayscaln", .{});
+    std.debug.print("Converting to grayscale\n", .{});
     try im.convert_grayscale();
     std.debug.print("Scaling\n", .{});
     try im.scale(600, 400, .BICUBIC);
-    std.debug.print("{any}", .{im.data.items});
     defer im.deinit();
     var sample: u32 = 1;
     if ((im.height) > ascii_height) {
