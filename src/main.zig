@@ -8,6 +8,7 @@ pub const std_options: std.Options = .{
     .logFn = myLogFn,
     .log_scope_levels = &[_]std.log.ScopeLevel{
         .{ .scope = .img2ascii, .level = .err },
+        .{ .scope = .jpeg_image, .level = .err },
     },
 };
 
@@ -56,9 +57,9 @@ pub fn sample_pixel(im: *Image, i: usize, j: usize, num_samples: u32) Error!f32 
 export fn asciify(name: [*:0]const u8, len: usize) usize {
     const name_slice: []const u8 = name[0..len];
     var ret: usize = 0;
-    std.debug.print("asciifying {s}\n", .{name});
+    IMG2ASCII_LOG.info("asciifying {s}\n", .{name});
     img2ascii(name_slice) catch |err| {
-        std.debug.print("Error occured: {any}\n", .{err});
+        IMG2ASCII_LOG.info("Error occured: {any}\n", .{err});
         ret = 1;
     };
 
@@ -68,11 +69,11 @@ export fn asciify(name: [*:0]const u8, len: usize) usize {
 pub fn img2ascii(name: []const u8) Error!void {
     var im: Image = undefined;
     const extension: []const u8 = name[name.len - 3 ..];
-    std.debug.print("Loading image\n", .{});
+    IMG2ASCII_LOG.info("Loading image\n", .{});
     if (std.mem.eql(u8, extension, "jpg") or std.mem.eql(u8, name[name.len - 4 ..], "jpeg")) {
-        std.debug.print("Loading jpeg\n", .{});
+        IMG2ASCII_LOG.info("Loading jpeg\n", .{});
         im = try Image.init_load(allocator, name, .JPEG);
-        std.debug.print("jpeg loaded\n", .{});
+        IMG2ASCII_LOG.info("jpeg loaded\n", .{});
     } else if (std.mem.eql(u8, extension, "bmp")) {
         im = try Image.init_load(allocator, name, .BMP);
     } else if (std.mem.eql(u8, extension, "png")) {
@@ -80,9 +81,9 @@ pub fn img2ascii(name: []const u8) Error!void {
     } else {
         IMG2ASCII_LOG.err("Image must be .jpg/.png/.bmp\n", .{});
     }
-    std.debug.print("Converting to grayscale\n", .{});
+    IMG2ASCII_LOG.info("Converting to grayscale\n", .{});
     try im.convert_grayscale();
-    std.debug.print("Scaling\n", .{});
+    IMG2ASCII_LOG.info("Scaling\n", .{});
     try im.scale(600, 400, .BICUBIC);
     defer im.deinit();
     var sample: u32 = 1;
