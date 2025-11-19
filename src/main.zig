@@ -9,6 +9,7 @@ pub const std_options: std.Options = .{
     .log_scope_levels = &[_]std.log.ScopeLevel{
         .{ .scope = .img2ascii, .level = .err },
         .{ .scope = .jpeg_image, .level = .err },
+        .{ .scope = .common, .level = .err },
     },
 };
 
